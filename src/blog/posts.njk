@@ -1,0 +1,11 @@
+---
+pagination:
+  data: posts
+  size: 1
+  alias: post
+tags: post
+permalink: "{{ post.url }}"
+layout: layout.njk
+---
+
+{% include "posts/post-layout.njk" %}

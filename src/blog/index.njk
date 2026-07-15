@@ -1,0 +1,12 @@
+---
+title: Blog
+layout: layout.njk
+pagination:
+  data: posts
+  size: 10
+  alias: pagedPosts
+eleventyComputed:
+  permalink: "{% if pagination.pageNumber == 0 %}/blog/{% else %}/blog/{{ pagination.pageNumber + 1 }}/{% endif %}"
+---
+
+{% include "posts/blog-home-layout.njk" %}

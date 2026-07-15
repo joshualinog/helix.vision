@@ -1,0 +1,49 @@
+{% set postTags = post.data.tags or post.data.labels or [] %}
+
+<main class="overflow-hidden bg-white">
+  <div class="px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl lg:max-w-7xl">
+      <header class="pt-12 sm:pt-16">
+        <p class="mt-16 text-xs font-semibold tracking-widest text-gray-500 uppercase">{{ post.data.date | date("EEEE, LLLL d, yyyy") }}</p>
+        <h1 class="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">{{ post.data.title }}</h1>
+      </header>
+
+      <div class="mt-16 pb-24">
+        <article class="mx-auto w-full max-w-2xl">
+          <div class="mb-8 flex flex-wrap items-center gap-3">
+            <p class="text-sm font-semibold text-gray-700">{{ post.data.author | default('helix.vision') }}</p>
+            {% if postTags.length %}
+              {% for tag in postTags %}
+                <span class="rounded-full border border-gray-300 bg-gray-50 px-2 text-sm font-medium text-gray-600">{{ tag }}</span>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          {% if post.data.mainImage %}
+            <img alt="{{ post.data.title }}" class="mb-10 aspect-3/2 w-full rounded-2xl object-cover shadow-xl" src="{{ post.data.mainImage }}" />
+          {% endif %}
+
+          <div class="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-a:text-blue-600 prose-a:font-semibold prose-a:no-underline hover:prose-a:underline">
+            {{ post.data.contentHtml | safe }}
+          </div>
+
+          <div class="mt-10 flex flex-wrap items-center gap-4">
+            <a href="/blog/" class="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 transition-colors">← Back to blog</a>
+            <a id="share-twitter" href="#" target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.741l7.73-8.835L1.254 2.25H8.08l4.258 5.63 5.907-5.63Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              Share on X
+            </a>
+          </div>
+          <script>
+            (function() {
+              var url = encodeURIComponent(location.href);
+              var title = encodeURIComponent(document.title);
+              document.getElementById('share-twitter').href = 'https://twitter.com/intent/tweet?url=' + url + '&text=' + title;
+            })();
+          </script>
+        </article>
+      </div>
+    </div>
+  </div>
+</main>

@@ -1,0 +1,105 @@
+name: Issue Event Sync
+
+permissions:
+  contents: write
+
+on:
+  issues:
+    types: [labeled, unlabeled, edited, deleted]
+
+jobs:
+  event-sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Handle deleted issue
+        if: github.event.action == 'deleted'
+        run: node ./scripts/sync-issues.js delete ${{ github.event.issue.number }}
+
+      - name: Run sync for single issue
+        if: github.event.action != 'deleted'
+        run: |
+          node ./scripts/sync-issues.js
+
+      - name: Commit generated post
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAT: ${{ secrets.GH_PAT }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          if [ -z "$BRANCH" ] || [ "$BRANCH" = "$GITHUB_REF" ]; then
+            BRANCH="$DEFAULT_BRANCH"
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add src/data/posts || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: sync issue $ISSUE_NUMBER to src/data/posts" || true
+
+            git remote set-url origin https://x-access-token:${PAT}@github.com/${{ github.repository }}.git
+            git fetch --no-tags --prune origin $DEFAULT_BRANCH
+
+            FALLBACK=0
+            if ! git rebase origin/$DEFAULT_BRANCH; then
+              echo "Rebase conflict; aborting and falling back to sync branch"
+              git rebase --abort || true
+              FALLBACK=1
+            fi
+
+            if [ "$FALLBACK" -eq 0 ]; then
+              attempts=0
+              max_attempts=3
+              until git push origin "HEAD:${DEFAULT_BRANCH}"; do
+                attempts=$((attempts+1))
+                if [ $attempts -ge $max_attempts ]; then
+                  FALLBACK=1
+                  break
+                fi
+                echo "Push rejected, fetching and rebasing (attempt $attempts)..."
+                git fetch origin $DEFAULT_BRANCH
+                if ! git rebase origin/$DEFAULT_BRANCH; then
+                  git rebase --abort || true
+                  FALLBACK=1
+                  break
+                fi
+              done
+            fi
+
+            if [ "$FALLBACK" -eq 1 ]; then
+              BRANCH_NAME="sync/issue-${ISSUE_NUMBER}-$(date +%s)"
+              git checkout -b "$BRANCH_NAME"
+              git push --set-upstream origin "$BRANCH_NAME"
+              echo "SYNC_BRANCH=$BRANCH_NAME" >> $GITHUB_ENV
+              echo "SYNC_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+            else
+              echo "Direct push to ${DEFAULT_BRANCH} succeeded"
+            fi
+          fi
+
+      - name: Comment on issue with sync branch
+        if: env.SYNC_BRANCH != ''
+        env:
+          PAT: ${{ secrets.GH_PAT }}
+        run: |
+          BODY="Automated sync: created branch ${SYNC_BRANCH} and pushed commit ${SYNC_COMMIT}."
+          gh issue comment "$ISSUE_NUMBER" --body "$BODY"

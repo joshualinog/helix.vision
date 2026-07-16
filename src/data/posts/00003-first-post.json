@@ -1,0 +1,17 @@
+{
+  "id": 3,
+  "title": "first post",
+  "slug": "first-post",
+  "author": "joshualinog",
+  "createdAt": "2026-07-15T16:47:13Z",
+  "updatedAt": "2026-07-15T16:47:13Z",
+  "labels": [
+    "contentPost"
+  ],
+  "status": "published",
+  "excerpt": "# my first post! hello world",
+  "content": "# my first post!\nhello world",
+  "raw_issue": {
+    "url": "https://github.com/joshualinog/helix.vision/issues/3"
+  }
+}

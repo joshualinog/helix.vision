@@ -1,6 +1,0 @@
-{
-  "id": 1,
-  "createdAt": "2026-07-15T00:00:00Z",
-  "updatedAt": "2026-07-15T00:00:00Z",
-  "content": "---\ntitle: Hello Blog\nslug: hello-blog\ndate: 2026-07-15\nseo_description: Sample post for testing\n---\n\nWelcome to my blog. This is a test post to ensure the /blog/ index is generated."
-}
